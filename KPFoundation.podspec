@@ -21,11 +21,11 @@ Pod::Spec.new do |s|
 TODO: Add long description of the pod here.
                        DESC
 
-  s.homepage         = 'https://github.com/lkr31415/KPFoundation'
+  s.homepage         = 'https://github.com/kp99999/KPFoundation'
   # s.screenshots     = 'www.example.com/screenshots_1', 'www.example.com/screenshots_2'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
-  s.author           = { 'lkr31415' => 'liukangrui@kp99.cn' }
-  s.source           = { :git => 'https://github.com/lkr31415/KPFoundation.git', :tag => s.version.to_s }
+  s.author           = { 'kp99999' => 'kp_ios@kp99.cn' }
+  s.source           = { :git => 'https://github.com/kp99999/KPFoundation.git', :tag => s.version.to_s }
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
   s.ios.deployment_target = '8.0'
@@ -35,20 +35,7 @@ TODO: Add long description of the pod here.
   s.dependency 'AFNetworking'
   s.dependency 'ZipArchive'
 
-  s.public_header_files = 'KPFoundation/KPFoundation.h'
-  s.source_files = 'KPFoundation/KPFoundation.h'
-
-  s.subspec 'Module' do |ss|
-  ss.public_header_files = 'KPFoundation/Module/**/*.h','KPFoundation/ZYPublicDefine.h'
-  ss.source_files = 'KPFoundation/Module/**/*.{h,m}','KPFoundation/ZYPublicDefine.h'
-  ss.requires_arc = true
-  end
-
-  s.subspec 'ObjSafe' do |ss|
-  ss.public_header_files = 'KPFoundation/NoArc/ObjSafe/*.h'
-  ss.source_files = 'KPFoundation/NoArc/ObjSafe/*.{h,m}'
-  ss.requires_arc = false
-  end
+  s.source_files = 'KPFoundation/Classes/**/*'
   
   # s.resource_bundles = {
   #   'KPFoundation' => ['KPFoundation/Assets/*.png']
