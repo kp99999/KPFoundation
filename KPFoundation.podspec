@@ -36,6 +36,8 @@ TODO: Add long description of the pod here.
   s.dependency 'ZipArchive'
 
   s.source_files = 'KPFoundation/Classes/**/*'
+  s.requires_arc = false
+  s.requires_arc = ['KPFoundation/Classes/Module/**/*.m']
   
   # s.resource_bundles = {
   #   'KPFoundation' => ['KPFoundation/Assets/*.png']
