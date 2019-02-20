@@ -36,8 +36,18 @@ TODO: Add long description of the pod here.
   s.dependency 'ZipArchive'
 
   s.source_files = 'KPFoundation/Classes/**/*'
-  s.requires_arc = false
-  s.requires_arc = ['KPFoundation/Classes/Module/**/*.m']
+
+  s.requires_arc = true
+  
+  non_arc_files = 'KPFoundation/Classes/NoArc/ObjSafe/*.{h,m}'
+  s.exclude_files = non_arc_files
+  s.subspec 'no-arc' do |sp|
+      
+      sp.source_files = non_arc_files
+      
+      sp.requires_arc = false
+      
+  end
   
   # s.resource_bundles = {
   #   'KPFoundation' => ['KPFoundation/Assets/*.png']
