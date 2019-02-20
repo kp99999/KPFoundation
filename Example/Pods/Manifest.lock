@@ -1,0 +1,16 @@
+PODS:
+  - KPFoundation (0.1.0)
+
+DEPENDENCIES:
+  - KPFoundation (from `../`)
+
+EXTERNAL SOURCES:
+  KPFoundation:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  KPFoundation: 58df5262d704b1d324c00130e0a2e3959a0eb954
+
+PODFILE CHECKSUM: 15e69e5322606d6265fa91496b25021a1ecfee7c
+
+COCOAPODS: 1.6.0.beta.2

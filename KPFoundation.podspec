@@ -30,7 +30,25 @@ TODO: Add long description of the pod here.
 
   s.ios.deployment_target = '8.0'
 
-  s.source_files = 'KPFoundation/Classes/**/*'
+  s.dependency 'FMDB'
+  s.dependency 'CocoaAsyncSocket'
+  s.dependency 'AFNetworking'
+  s.dependency 'ZipArchive'
+
+  s.public_header_files = 'KPFoundation/KPFoundation.h'
+  s.source_files = 'KPFoundation/KPFoundation.h'
+
+  s.subspec 'Module' do |ss|
+  ss.public_header_files = 'KPFoundation/Module/**/*.h','KPFoundation/ZYPublicDefine.h'
+  ss.source_files = 'KPFoundation/Module/**/*.{h,m}','KPFoundation/ZYPublicDefine.h'
+  ss.requires_arc = true
+  end
+
+  s.subspec 'ObjSafe' do |ss|
+  ss.public_header_files = 'KPFoundation/NoArc/ObjSafe/*.h'
+  ss.source_files = 'KPFoundation/NoArc/ObjSafe/*.{h,m}'
+  ss.requires_arc = false
+  end
   
   # s.resource_bundles = {
   #   'KPFoundation' => ['KPFoundation/Assets/*.png']
