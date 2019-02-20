@@ -24,7 +24,7 @@ TODO: Add long description of the pod here.
   s.homepage         = 'https://github.com/kp99999/KPFoundation'
   # s.screenshots     = 'www.example.com/screenshots_1', 'www.example.com/screenshots_2'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
-  s.author           = { 'kp99999' => 'kp_ios@kp99.cn' }
+  s.author           = { 'KP99999' => 'kp_ios@kp99.cn' }
   s.source           = { :git => 'https://github.com/kp99999/KPFoundation.git', :tag => s.version.to_s }
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
