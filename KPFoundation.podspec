@@ -35,18 +35,19 @@ TODO: Add long description of the pod here.
   s.dependency 'AFNetworking'
   s.dependency 'ZipArchive'
 
-  s.source_files = 'KPFoundation/Classes/**/*'
-
-  s.requires_arc = true
+  s.public_header_files = 'KPFoundation/KPFoundation.h'
+  s.source_files = 'KPFoundation/KPFoundation.h'
   
-  non_arc_files = 'KPFoundation/Classes/NoArc/ObjSafe/*.{h,m}'
-  s.exclude_files = non_arc_files
-  s.subspec 'no-arc' do |sp|
-      
-      sp.source_files = non_arc_files
-      
-      sp.requires_arc = false
-      
+  s.subspec 'Module' do |ss|
+      ss.public_header_files = 'KPFoundation/Module/**/*.h','KPFoundation/KPPublicDefine.h'
+      ss.source_files = 'KPFoundation/Module/**/*.{h,m}','KPFoundation/KPPublicDefine.h'
+      ss.requires_arc = true
+  end
+  
+  s.subspec 'ObjSafe' do |ss|
+      ss.public_header_files = 'KPFoundation/NoArc/ObjSafe/*.h'
+      ss.source_files = 'KPFoundation/NoArc/ObjSafe/*.{h,m}'
+      ss.requires_arc = false
   end
   
   # s.resource_bundles = {

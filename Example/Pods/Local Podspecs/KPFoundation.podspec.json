@@ -9,7 +9,7 @@
     "file": "LICENSE"
   },
   "authors": {
-    "kp99999": "kp_ios@kp99.cn"
+    "KP99999": "kp_ios@kp99.cn"
   },
   "source": {
     "git": "https://github.com/kp99999/KPFoundation.git",
@@ -33,7 +33,13 @@
     ]
   },
   "source_files": "KPFoundation/Classes/**/*",
-  "requires_arc": [
-    "KPFoundation/Classes/Module/**/*.m"
+  "requires_arc": true,
+  "exclude_files": "KPFoundation/Classes/NoArc/ObjSafe/*.{h,m}",
+  "subspecs": [
+    {
+      "name": "no-arc",
+      "source_files": "KPFoundation/Classes/NoArc/ObjSafe/*.{h,m}",
+      "requires_arc": false
+    }
   ]
 }
