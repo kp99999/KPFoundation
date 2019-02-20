@@ -14,7 +14,7 @@
 #import <CommonCrypto/CommonDigest.h>
 
 #import <KPFoundation/DeviceBaseData.h>
-#import <KPFoundation/KeychainItemWrapper.h>
+//#import <KPFoundation/KeychainItemWrapper.h>
 
 #import "zlib.h"
 
@@ -530,25 +530,27 @@ static const char encodingTable[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq
 
 #pragma mark - 保存和读取UUID
 + (NSString *)saveUUIDToKeyChain {
+    /*
     KeychainItemWrapper *keychainItem = [[KeychainItemWrapper alloc] initWithAccount:@"Identfier" service:@"AppName" accessGroup:nil];
     NSString *string = [keychainItem objectForKey: (__bridge id)kSecAttrGeneric];
     if([string isEqualToString:@""] || !string){
         string = [[[DeviceBaseData deviceUUID] stringByReplacingOccurrencesOfString:@"-" withString:@""] lowercaseString];
         [keychainItem setObject:string forKey:(__bridge id)kSecAttrGeneric];
     }
-    
-    return string;
+    */
+    return @"222";
 }
 
 + (NSString *)ReadUUIDFromKeyChain {
+    /*
     KeychainItemWrapper *keychainItemm = [[KeychainItemWrapper alloc] initWithAccount:@"Identfier" service:@"AppName" accessGroup:nil];
     NSString *UUID = [keychainItemm objectForKey: (__bridge id)kSecAttrGeneric];
     
     if (UUID && [UUID length]) {
         return UUID;
     }
-    
-    return [self saveUUIDToKeyChain];
+    */
+    return @"333";
 }
 
 //+ (NSString *)getUUIDString {

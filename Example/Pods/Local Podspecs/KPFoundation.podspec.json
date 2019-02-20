@@ -32,13 +32,25 @@
 
     ]
   },
-  "source_files": "KPFoundation/Classes/**/*",
-  "requires_arc": true,
-  "exclude_files": "KPFoundation/Classes/NoArc/ObjSafe/*.{h,m}",
+  "public_header_files": "KPFoundation/KPFoundation.h",
+  "source_files": "KPFoundation/KPFoundation.h",
   "subspecs": [
     {
-      "name": "no-arc",
-      "source_files": "KPFoundation/Classes/NoArc/ObjSafe/*.{h,m}",
+      "name": "Module",
+      "public_header_files": [
+        "KPFoundation/Module/**/*.h",
+        "KPFoundation/KPPublicDefine.h"
+      ],
+      "source_files": [
+        "KPFoundation/Module/**/*.{h,m}",
+        "KPFoundation/KPPublicDefine.h"
+      ],
+      "requires_arc": true
+    },
+    {
+      "name": "ObjSafe",
+      "public_header_files": "KPFoundation/NoArc/ObjSafe/*.h",
+      "source_files": "KPFoundation/NoArc/ObjSafe/*.{h,m}",
       "requires_arc": false
     }
   ]

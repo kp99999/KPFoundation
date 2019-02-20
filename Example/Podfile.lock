@@ -22,9 +22,15 @@ PODS:
     - AFNetworking
     - CocoaAsyncSocket
     - FMDB
-    - KPFoundation/no-arc (= 0.1.0)
+    - KPFoundation/Module (= 0.1.0)
+    - KPFoundation/ObjSafe (= 0.1.0)
     - ZipArchive
-  - KPFoundation/no-arc (0.1.0):
+  - KPFoundation/Module (0.1.0):
+    - AFNetworking
+    - CocoaAsyncSocket
+    - FMDB
+    - ZipArchive
+  - KPFoundation/ObjSafe (0.1.0):
     - AFNetworking
     - CocoaAsyncSocket
     - FMDB
@@ -49,7 +55,7 @@ SPEC CHECKSUMS:
   AFNetworking: b6f891fdfaed196b46c7a83cf209e09697b94057
   CocoaAsyncSocket: eafaa68a7e0ec99ead0a7b35015e0bf25d2c8987
   FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
-  KPFoundation: fa1a5a62369b6d07dcad5e08996876ceefdbbf4d
+  KPFoundation: 1d9ead92af72aa635d60364d566d66a6b7a5a052
   ZipArchive: e25a4373192673e3229ac8d6e9f64a3e5713c966
 
 PODFILE CHECKSUM: 15e69e5322606d6265fa91496b25021a1ecfee7c
