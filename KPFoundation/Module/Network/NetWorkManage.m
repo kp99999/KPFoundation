@@ -136,27 +136,35 @@ typedef NS_ENUM (NSInteger,PriorityType)  {
 }
 
 - (void)clearUnuseLink{
-    for (NSInteger grade = 1; grade < 4; grade++) {
-        NSMutableArray *linkArr = nil;
-        switch (grade) {
-            case 1:
-                linkArr = linkInitiative;
-                break;
-            case 2:
-                linkArr = linkPassive;
-                break;
-            case 3:
-                linkArr = linkImage;
-                break;
-            default:
-                break;
-        }
-        
-        for (NSInteger i = 0; linkArr && i < [linkArr count]; i++) {
-            RequestStatus requestStatus = [(NetworkRequest *)[linkArr objectAtIndex:i] getNowRequestStatus];
-            if (requestStatus == RequestFinish || requestStatus == RequestCancel || requestStatus == RequestErr) {
-                [linkArr removeObjectAtIndex:i];
-                i--;
+    
+    @synchronized ([NetWorkManage Share]) {
+        for (NSInteger grade = 1; grade < 4; grade++) {
+            NSMutableArray *linkArr = nil;
+            switch (grade) {
+                case 1:
+                    linkArr = linkInitiative;
+                    break;
+                case 2:
+                    linkArr = linkPassive;
+                    break;
+                case 3:
+                    linkArr = linkImage;
+                    break;
+                default:
+                    break;
+            }
+            
+            for (NSInteger i = 0; linkArr && i < [linkArr count]; i++) {
+                if (linkArr.count > i) {
+                    RequestStatus requestStatus = [(NetworkRequest *)[linkArr objectAtIndex:i] getNowRequestStatus];
+                    if (requestStatus == RequestFinish || requestStatus == RequestCancel || requestStatus == RequestErr) {
+                        if (linkArr.count > i) {
+                            [linkArr removeObjectAtIndex:i];
+                            i--;
+                        }
+                    }
+                }
+                
             }
         }
     }

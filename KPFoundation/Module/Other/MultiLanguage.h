@@ -143,4 +143,6 @@ static struct LanguageItem {
  */
 - (NSString *)localizedStringForKey:(NSString *)key value:(NSString *)value table:(NSString *)tableName bundle:(NSBundle*)bundle;
 
+/// 获取语言类型
+-(NSString *)typeName;
 @end
