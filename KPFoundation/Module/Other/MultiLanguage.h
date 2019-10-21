@@ -11,11 +11,6 @@
 #define ML(key) \
 [[MultiLanguage Share] localizedStringForKey:key value:key table:nil]
 
-/*
- 本地语言类型改变接受的通知
- */
-extern NSString* const MultiLanguageLanguageChangedNotify;
-
 /**
  语言类型
  */

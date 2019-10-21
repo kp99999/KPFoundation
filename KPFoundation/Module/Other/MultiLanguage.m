@@ -10,11 +10,6 @@
 
 #import <objc/runtime.h>
 
-//本地语言类型改变接受的通知
-NSString* const MultiLanguageLanguageChangedNotify = @"MultiLanguageLanguageChangedNotify";
-//自定义语言缓存Key
-NSString* const MultiLanguageLanguageKey = @"MultiLanguageLanguageKey";
-
 /**
  根据语言名称获取语言类型
  @param name 语言名称
@@ -103,24 +98,6 @@ static NSString* languageName(LanguageType type)
     self  = [super init];
     if (self) {
         object_setClass([NSBundle mainBundle],[BundleEx class]);
-        
-        currentName = [[NSUserDefaults standardUserDefaults] objectForKey:MultiLanguageLanguageKey];
-        if (!currentName) {//第一次使用系统语言
-            currentName = [MultiLanguage GetDefAppleLanguages];
-            if (languageType(currentName) == LanguageTypeUnknown) {
-                currentName = languageName(LanguageTypeSimpleChinese);
-                _languageType = LanguageTypeSimpleChinese;
-            }else{
-                _languageType = languageType(currentName);
-            }
-            [[NSUserDefaults standardUserDefaults] setObject:currentName forKey:MultiLanguageLanguageKey];
-            [[NSUserDefaults standardUserDefaults] synchronize];
-        }else{
-            _languageType = languageType(currentName);
-        }
-        //设置语言包所在位置
-        NSString* path = [[NSBundle mainBundle] pathForResource:currentName ofType:@"lproj"];
-        _bundle = [NSBundle bundleWithPath:path];
     }
     return self;
 }
@@ -147,20 +124,22 @@ static NSString* languageName(LanguageType type)
 #pragma mark - getters and setters
 - (void)setLanguageType:(LanguageType)lType{
     
-    if (_languageType != lType) {
+    if (lType) {
         _languageType = lType;
         currentName = languageName(_languageType);
-        //设置语言包所在位置
-        NSString* path = [[NSBundle mainBundle] pathForResource:currentName ofType:@"lproj"];
-        _bundle = [NSBundle bundleWithPath:path];
-        
-        //缓存用户设置
-        [[NSUserDefaults standardUserDefaults] setObject:currentName forKey:MultiLanguageLanguageKey];
-        
-        //语言变更广播
-        [[NSNotificationCenter defaultCenter] postNotificationName:MultiLanguageLanguageChangedNotify object:nil userInfo:nil];
-        [[NSUserDefaults standardUserDefaults] synchronize];
+    }else {
+        currentName = [MultiLanguage GetDefAppleLanguages];
+        if (languageType(currentName) == LanguageTypeUnknown) {
+            currentName = languageName(LanguageTypeSimpleChinese);
+            _languageType = LanguageTypeSimpleChinese;
+        }else{
+            _languageType = languageType(currentName);
+        }
     }
+    
+    //设置语言包所在位置
+    NSString* path = [[NSBundle mainBundle] pathForResource:currentName ofType:@"lproj"];
+    _bundle = [NSBundle bundleWithPath:path];
 }
 
 - (void)setTypeName:(NSString *)tName{
