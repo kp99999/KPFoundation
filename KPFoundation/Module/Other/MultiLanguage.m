@@ -130,8 +130,8 @@ static NSString* languageName(LanguageType type)
     }else {
         currentName = [MultiLanguage GetDefAppleLanguages];
         if (languageType(currentName) == LanguageTypeUnknown) {
-            currentName = languageName(LanguageTypeSimpleChinese);
-            _languageType = LanguageTypeSimpleChinese;
+            currentName = languageName(LanguageTypeEnglish);
+            _languageType = LanguageTypeEnglish;
         }else{
             _languageType = languageType(currentName);
         }
