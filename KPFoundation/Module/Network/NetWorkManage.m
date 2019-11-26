@@ -29,6 +29,115 @@
 #define MaxPriorityMiddleLink        5
 #define MaxPriorityLowLink        10
 
+
+@interface NSKSafeMutableArray() {
+    CFMutableArrayRef _array;
+}
+
+@end
+
+@implementation NSKSafeMutableArray
+
+- (id)init {
+    self = [super init];
+    if (self) {
+        _array = CFArrayCreateMutable(kCFAllocatorDefault, 10, &kCFTypeArrayCallBacks);
+    }
+    return self;
+}
+
+// 获取可变数组数量
+- (NSUInteger)count {
+    __block NSUInteger result;
+    dispatch_sync(self.syncQueue, ^{
+        result = CFArrayGetCount(_array);
+    });
+    return result;
+}
+
+// 获取第N个位置的对象
+- (id)objectAtIndex:(NSUInteger)index {
+    __block id result;
+    dispatch_sync(self.syncQueue, ^{
+        NSUInteger count = CFArrayGetCount(_array);
+        result = index < count ? CFArrayGetValueAtIndex(_array, index) : nil;
+    });
+    return result;
+}
+
+// 插入对象至指定位置
+- (void)insertObject:(id)anObject atIndex:(NSUInteger)index {
+    __block NSUInteger blockIndex = index;
+    dispatch_barrier_async(self.syncQueue, ^{
+        if (!anObject) {
+            return;
+        }
+        
+        NSUInteger count = CFArrayGetCount(_array);
+        blockIndex = blockIndex > count ? count : blockIndex;
+        
+        CFArrayInsertValueAtIndex(_array, index, (__bridge const void *)anObject);
+    });
+}
+
+// 删除指定位置上的对象
+- (void)removeObjectAtIndex:(NSUInteger)index {
+    dispatch_barrier_async(self.syncQueue, ^{
+        NSUInteger count = CFArrayGetCount(_array);
+        //NSLog(@"_array_count = %d    -------    i = %d",count,index);
+        if (index < count) {
+            CFArrayRemoveValueAtIndex(_array, index);
+        }
+    });
+}
+
+// 添加对象
+- (void)addObject:(id)anObject {
+    dispatch_barrier_async(self.syncQueue, ^{
+        if (!anObject) {
+            return;
+        }
+        CFArrayAppendValue(_array, (__bridge const void *)anObject);
+    });
+}
+
+// 删除最后一个对象
+- (void)removeLastObject {
+    dispatch_barrier_async(self.syncQueue, ^{
+        NSUInteger count = CFArrayGetCount(_array);
+        if (count > 0) {
+            CFArrayRemoveValueAtIndex(_array, count-1);
+        }
+    });
+}
+
+// 替换指定位置的对象
+- (void)replaceObjectAtIndex:(NSUInteger)index withObject:(id)anObject {
+    dispatch_barrier_async(self.syncQueue, ^{
+        if (!anObject) {
+            return;
+        }
+        
+        NSUInteger count = CFArrayGetCount(_array);
+        if (index >= count) {
+            return;
+        }
+        
+        CFArraySetValueAtIndex(_array, index, (__bridge const void*)anObject);
+    });
+}
+
+// 懒加载
+- (dispatch_queue_t)syncQueue {
+    static dispatch_queue_t queue = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        queue = dispatch_queue_create("com.kong.NSKSafeMutableArray", DISPATCH_QUEUE_CONCURRENT);
+    });
+    return queue;
+}
+@end
+
 typedef NS_ENUM (NSInteger,PriorityType)  {
     PriorityNone = 0,
     PriorityHeight ,           // 优先级 高
@@ -39,11 +148,7 @@ typedef NS_ENUM (NSInteger,PriorityType)  {
 @interface NetWorkManage() {
     
     // 网络连接信息（网络只有一条链接）
-    NSMutableArray *linkInitiative;   // 优先级：1（最高）
-    NSMutableArray *linkPassive;   // 优先级：2
-    NSMutableArray *linkImage;   // 优先级：3
-    
-    PriorityType whichPriority;        // 表示当前优先级。1：linkInitiative，，2：linkPassive，，3：linkImage
+    NSKSafeMutableArray *linkPassive;   // 优先级：2
     
     BOOL needSecurity;          // 是否需要加密上传数据报文
     BOOL toSaveLocal;           // 是否本地刘副本
@@ -55,6 +160,8 @@ typedef NS_ENUM (NSInteger,PriorityType)  {
     // f每个请求都有一个 request id
     int64_t requestBase;
     int64_t requestSequence;
+    
+    dispatch_queue_t queue;
 }
 @end
 
@@ -79,10 +186,8 @@ typedef NS_ENUM (NSInteger,PriorityType)  {
 
 // 初始化
 - (void)initData{
-    
-    linkInitiative = [[NSMutableArray alloc]init];
-    linkPassive = [[NSMutableArray alloc]init];
-    linkImage = [[NSMutableArray alloc]init];
+    linkPassive = [[NSKSafeMutableArray alloc] init];
+    queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
     
     requestBase = 0;
     requestSequence = 0;
@@ -92,144 +197,50 @@ typedef NS_ENUM (NSInteger,PriorityType)  {
 }
 
 #pragma mark - 内部调用
-// 清除请求链接：theGrade清理级别，0表示全部
-- (void)clearLinkGrade:(NSInteger)theGrade{
-    if (theGrade == 0) {
-        for (NSInteger i = 0; linkInitiative && i < [linkInitiative count]; i++) {
-            [(NetworkRequest *)[linkInitiative objectAtIndex:i] cancelConnection];
-        }
-        [linkInitiative removeAllObjects];
-        
-        for (NSInteger i = 0; linkPassive && i < [linkPassive count]; i++) {
-            [(NetworkRequest *)[linkInitiative objectAtIndex:i] cancelConnection];
-        }
-        [linkPassive removeAllObjects];
-        for (NSInteger i = 0; linkImage && i < [linkImage count]; i++) {
-            [(NetworkRequest *)[linkImage objectAtIndex:i] cancelConnection];
-        }
-        [linkImage removeAllObjects];
-        
-        return;
-    }
-    
-    NSMutableArray *linkArr = nil;
-    switch (theGrade) {
-        case 1:
-            linkArr = linkInitiative;
-            break;
-        case 2:
-            linkArr = linkPassive;
-            break;
-        case 3:
-            linkArr = linkImage;
-            break;
-        default:
-            break;
-    }
-    
-    for (NSInteger x = 0; linkArr && x < [linkArr count]; x++) {
-        [(NetworkRequest *)[linkArr objectAtIndex:x] cancelConnection];
-    }
-    if (linkArr) {
-        [linkArr removeAllObjects];
-    }
-}
-
 - (void)clearUnuseLink{
     
-    @synchronized ([NetWorkManage Share]) {
-        for (NSInteger grade = 1; grade < 4; grade++) {
-            NSMutableArray *linkArr = nil;
-            switch (grade) {
-                case 1:
-                    linkArr = linkInitiative;
-                    break;
-                case 2:
-                    linkArr = linkPassive;
-                    break;
-                case 3:
-                    linkArr = linkImage;
-                    break;
-                default:
-                    break;
-            }
-            
-            for (NSInteger i = 0; linkArr && i < [linkArr count]; i++) {
-                if (linkArr.count > i) {
-                    RequestStatus requestStatus = [(NetworkRequest *)[linkArr objectAtIndex:i] getNowRequestStatus];
-                    if (requestStatus == RequestFinish || requestStatus == RequestCancel || requestStatus == RequestErr) {
-                        if (linkArr.count > i) {
-                            [linkArr removeObjectAtIndex:i];
-                            i--;
-                        }
+    dispatch_async(queue, ^{
+        for (NSInteger i = 0; linkPassive && i < linkPassive.count; i++) {
+            if (linkPassive.count > i) {
+                RequestStatus requestStatus = [(NetworkRequest *)[linkPassive objectAtIndex:i] getNowRequestStatus];
+                if (requestStatus == RequestFinish || requestStatus == RequestCancel || requestStatus == RequestErr) {
+                    if (linkPassive.count > i) {
+                        //NSLog(@"linkPassive_count = %d    -------    i = %d",linkPassive.count,i);
+                        [linkPassive removeObjectAtIndex:i];
+                        i--;
                     }
                 }
-                
             }
         }
-    }
+    });
 }
 
 - (void)requestToNetwork{
-    NSInteger nowLinkNumb = 0;
     
-    // 发优先级最高   接口请求   只能有一条
-    for (NSInteger i = 0; linkInitiative && i < [linkInitiative count]; i++) {
-        if ([(NetworkRequest *)[linkInitiative objectAtIndex:i] getNowRequestStatus] == RequestInNetWork) {
-            nowLinkNumb++;
-            return;
+    dispatch_async(queue, ^{
+        NSInteger nowLinkNumb = 0;
+        NSInteger middleLinkNumb = 0;
+        for (NSInteger i = 0; linkPassive && i < linkPassive.count; i++) {
+            if ([(NetworkRequest *)[linkPassive objectAtIndex:i] getNowRequestStatus] == RequestInNetWork) {
+                middleLinkNumb++;
+                nowLinkNumb++;
+            }
+        }
+        for (NSInteger i = 0; linkPassive && i < linkPassive.count; i++) {
+            if (nowLinkNumb >= MaxLink) {
+                return;
+            }
             
-        }else if([(NetworkRequest *)[linkInitiative objectAtIndex:i] getNowRequestStatus] == RequestNone) {
-            [(NetworkRequest *)[linkInitiative objectAtIndex:i] startRequest];
-            nowLinkNumb++;
-            return;
-            
+            if ([(NetworkRequest *)[linkPassive objectAtIndex:i] getNowRequestStatus] == RequestNone) {
+                [(NetworkRequest *)[linkPassive objectAtIndex:i] startRequest];
+                middleLinkNumb++;
+                nowLinkNumb++;
+            }
+            if (middleLinkNumb >= MaxPriorityLowLink) {
+                break;
+            }
         }
-    }
-    
-    NSInteger middleLinkNumb = 0;
-    for (NSInteger i = 0; linkPassive && i < [linkPassive count]; i++) {
-        if ([(NetworkRequest *)[linkPassive objectAtIndex:i] getNowRequestStatus] == RequestInNetWork) {
-            middleLinkNumb++;
-            nowLinkNumb++;
-        }
-    }
-    for (NSInteger i = 0; linkPassive && i < [linkPassive count]; i++) {
-        if (nowLinkNumb >= MaxLink) {
-            return;
-        }
-        
-        if ([(NetworkRequest *)[linkPassive objectAtIndex:i] getNowRequestStatus] == RequestNone) {
-            [(NetworkRequest *)[linkPassive objectAtIndex:i] startRequest];
-            middleLinkNumb++;
-            nowLinkNumb++;
-        }
-        if (middleLinkNumb >= MaxPriorityLowLink) {
-            break;
-        }
-    }
-    
-    NSInteger lowLinkNumb = 0;
-    for (NSInteger i = 0; linkImage && i < [linkImage count]; i++) {
-        if ([(NetworkRequest *)[linkImage objectAtIndex:i] getNowRequestStatus] == RequestInNetWork) {
-            lowLinkNumb++;
-            nowLinkNumb++;
-        }
-    }
-    for (NSInteger i = 0; linkImage && i < [linkImage count]; i++) {
-        if (nowLinkNumb >= MaxLink) {
-            return;
-        }
-        
-        if ([(NetworkRequest *)[linkImage objectAtIndex:i] getNowRequestStatus] == RequestNone) {
-            [(NetworkRequest *)[linkImage objectAtIndex:i] startRequest];
-            lowLinkNumb++;
-            nowLinkNumb++;
-        }
-        if (lowLinkNumb >= MaxPriorityLowLink) {
-            break;
-        }
-    }
+    });
 }
 
 // 初始化请求
@@ -308,12 +319,7 @@ typedef NS_ENUM (NSInteger,PriorityType)  {
                 
             }];
         }
-        
-        if (thePri == 1) {
-            [linkInitiative addObject:link];
-        }else if (thePri == 2) {
-            [linkPassive addObject:link];
-        }
+        [linkPassive addObject:link];
     }
     
     if (isToNetwork) {
@@ -331,144 +337,13 @@ typedef NS_ENUM (NSInteger,PriorityType)  {
 }
 
 
-- (void)requestInstantURL:(NSString *)interfaceURL PostData:(id)upData Header:(NSDictionary *)headerDic Model:(Class)modelClass Completion:(BSNetWork)completionDo {
-    [self requestInterface:interfaceURL PostData:upData Header:headerDic Model:modelClass Priority:PriorityHeight Post:YES Completion:completionDo];
-}
-- (void)requestInstantURL:(NSString *)interfaceURL PostData:(id)upData Header:(NSDictionary *)headerDic Completion:(BSNetWork)completionDo {
-    [self requestInterface:interfaceURL PostData:upData Header:headerDic Model:nil Priority:PriorityHeight Post:YES Completion:completionDo];
-}
-
 - (void)requestLocalURL:(NSString *)interfaceURL PostData:(id)upData Header:(NSDictionary *)headerDic Model:(Class)modelClass FromLocal:(BSLocal)localDo Completion:(BSNetWork)completionDo {
-    // 先获取本地数据
-//    // 对低优先级的，先从本地读，并返回
-//    if (nowPriority == 2 && toSaveLocal)
-//        [self handleBackData:NO InterfaceData:[[FileToManager fileDo] operatingReadFile:requestStr ReadType:2 Authority:self] Times:2];
-    
-    // 再请求
     [self requestInterface:interfaceURL PostData:upData Header:headerDic Model:modelClass Priority:PriorityMiddle Post:YES Completion:completionDo];
 }
 - (void)requestLocalURL:(NSString *)interfaceURL PostData:(id)upData Header:(NSDictionary *)headerDic Completion:(BSNetWork)completionDo {
-    if ([interfaceURL hasPrefix:@"local://"]) {
-        completionDo([FileUseOther GetAsynchronousJsonLocal:[[interfaceURL stringByReplacingOccurrencesOfString:@"local://" withString:@""] stringByReplacingOccurrencesOfString:@"/" withString:@"_"] BundleResource:nil]);
-        return;
-    }
     [self requestInterface:interfaceURL PostData:upData Header:headerDic Model:nil Priority:PriorityMiddle Post:YES Completion:completionDo];
 }
 
-- (void)requestInstantGetURL:(NSString *)interfaceURL Header:(NSDictionary *)headerDic Model:(Class)modelClass Completion:(BSNetWork)completionDo {
-    
-    [self requestInterface:interfaceURL PostData:nil Header:headerDic Model:modelClass Priority:PriorityHeight Post:NO Completion:completionDo];
-}
-
-- (void)downLocalURL:(NSString *)url Completion:(BSNetWork)completionDo {
-    [self downLocalURL:url LocalFrist:YES Completion:completionDo];
-}
-- (void)downLocalURL:(NSString *)url LocalFrist:(BOOL)isLocal Completion:(BSNetWork)completionDo {
-    [self clearUnuseLink];
-    
-    if (!completionDo) {
-        return;
-    }
-    
-    if (url == nil || [url length] < 1) {
-        completionDo(nil);
-        return;
-    }
-    
-    if (isLocal) {
-        NSData *iData = [[FileUse Share] readFolderName:@"image_important" FileName:url];
-        
-        if (iData) {
-            completionDo([UIImage imageWithData:iData]);
-            
-            return ;
-        }
-    }
-    
-    // 去重复
-    for (NetworkRequest *oneLink in linkImage) {
-        if ([oneLink detectionInUrl:url]) {
-            completionDo(nil);
-            return;
-        }
-    }
-    
-    __block BOOL isToNetwork = YES;
-    
-    NetworkRequest *link_3 = [[NetworkRequest alloc]initWithURLString:url RequestType:RequestImage];
-    if (link_3) {
-        
-        [link_3 setClassParse:nil];
-        
-        [link_3 GETImageProgress:nil success:^(id secData) {
-            // 预处理数据
-            
-            if (secData && [secData isKindOfClass:[UIImage class]]) {
-                NSData *imageData = UIImagePNGRepresentation(secData);
-                
-                [[FileUse Share] writeData:imageData FolderName:FolderName_Clean30_ResourceFile FileName:url];
-            }
-            
-            completionDo(secData);
-            
-            [self requestToNetwork];
-        } failure:^(NSError *error) {
-            completionDo(nil);
-            
-            isToNetwork = NO;
-            [self requestToNetwork];
-        }];
-        
-        [linkImage addObject:link_3];
-    }
-    
-    if (isToNetwork) {
-        [self requestToNetwork];
-    }
-
-}
-
-// URL下载文件 优先中
-- (void)downFileURL:(NSString *)url SaveFolderPath:(NSString *)fPath FileName:(NSString *)fileName Completion:(BSNetWork)completionDo {
-    [self clearUnuseLink];
-    
-    if (url == nil || [url length] < 5 || completionDo == nil) {
-        if (completionDo) {
-            completionDo(@"url有误");
-        }
-        return;
-    }
-    
-    if (!(fPath && fileName)) {
-        completionDo(@"文件名不能为空");
-        return;
-    }
-    
-    __block BOOL isToNetwork = YES;
-    
-    NetworkRequest *link_2 = [[NetworkRequest alloc]initWithURLString:url RequestType:RequestFile];
-    if (link_2) {
-        
-        [link_2 setClassParse:nil];
-        
-        [link_2 GETDownFileProgress:nil folderPath:fPath fileName:fileName success:^(id data) {
-            completionDo(data);
-            
-            [self requestToNetwork];
-        } failure:^(NSError *error) {
-            completionDo(error);
-            
-            isToNetwork = NO;
-            [self requestToNetwork];
-        }];
-        
-        [linkPassive addObject:link_2];
-    }
-    
-    if (isToNetwork) {
-        [self requestToNetwork];
-    }
-}
 
 // 上传文件
 - (void)upFileURL:(NSString *)url PostData:(id)upData Header:(NSDictionary *)headerDic FileData:(NSData *)fData Name:(NSString *)name FileName:(NSString *)fileName MimeType:(NSString *)mimeType Model:(Class)mClass Completion:(BSNetWork)completionDo {
@@ -529,17 +404,7 @@ typedef NS_ENUM (NSInteger,PriorityType)  {
     if (isToNetwork) {
         [self requestToNetwork];
     }
-
-}
-
-// 重新初始化 networkLink 数据
-- (void)clearNetworkLink:(BOOL)onlyImage{
     
-    if (onlyImage) {
-        [self clearLinkGrade:3];
-    }else{
-        [self clearLinkGrade:0];
-    }
 }
 
 ////////////////////////////////////////////////////////////
