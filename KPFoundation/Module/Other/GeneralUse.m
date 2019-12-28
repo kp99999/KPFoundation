@@ -245,6 +245,10 @@
     }
     
     NSInteger commaNum = ([pointFront length] - 1)/3;
+    // 防止整数部分不存在 commanum计算错误
+    if ([pointFront isEqualToString:@""]) {
+        commaNum = 0;
+    }
     NSMutableArray *arr = [NSMutableArray array];
     for (NSInteger i = 0; i < commaNum + 1; i++) {
         NSInteger index = [pointFront length] - (i+1)*3;
